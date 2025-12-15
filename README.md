@@ -1,6 +1,7 @@
 # amp-auto-update
 
-Cubecoders AMP auto update script was designed to automatically update system packages and AMP components on Debian/Ubuntu servers. It Stops AMP instances, updates system and AMP software, restarts AMP instances, and logs results for unattended maintenance.
+Cubecoders AMP auto update script was designed to automatically update system packages and AMP components on Debian/Ubuntu servers. 
+It Stops AMP instances, updates system and AMP software, restarts AMP instances, ensures permissions are correct, and logs results for unattended maintenance.
 
 Tags: Cubecoders AMP, amp-auto-update, ampinstmgr, getamp, cron, apt, Debian, Ubuntu
 
