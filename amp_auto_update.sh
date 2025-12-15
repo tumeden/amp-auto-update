@@ -47,30 +47,6 @@ check_amp_status() {
     fi
 }
 
-# Function to stop AMP instances
-stop_amp_instances() {
-    log "${BLUE}Stopping all AMP instances...${NC}"
-    if command -v ampinstmgr &> /dev/null; then
-        su -l amp -c "ampinstmgr stopall"
-        sleep 5
-        log "${GREEN}AMP instances stopped${NC}"
-    else
-        log "${YELLOW}WARNING: ampinstmgr not found in PATH${NC}"
-    fi
-}
-
-# Function to start AMP instances
-start_amp_instances() {
-    log "${BLUE}Starting AMP instances...${NC}"
-    if command -v ampinstmgr &> /dev/null; then
-        su -l amp -c "ampinstmgr startall"
-        sleep 10
-        log "${GREEN}AMP instances started${NC}"
-    else
-        log "${YELLOW}WARNING: ampinstmgr not found in PATH${NC}"
-    fi
-}
-
 # Ensure AMP permissions are correct
 ensure_amp_perms() {
     log "${MAGENTA}Ensuring AMP permissions are correct...${NC}"
@@ -95,7 +71,9 @@ repair_amp_repo() {
     fi
 }
 
-# Step 1: System Update
+# --------------------------------------------------
+# Step 1: Update System Packages
+# --------------------------------------------------
 log "${BLUE}Step 1: Updating system packages...${NC}"
 apt update || error_exit "Failed to update package list"
 
@@ -108,12 +86,11 @@ else
     log "${GREEN}No system packages need upgrading${NC}"
 fi
 
-# Step 2: Stop AMP instances before update
-log "${BLUE}Step 2: Preparing AMP for update...${NC}"
-stop_amp_instances
-
-# Step 3: Update AMP Instance Manager and Instances
-log "${BLUE}Step 3: Updating AMP instance manager and instances...${NC}"
+# --------------------------------------------------
+# Step 2: Update AMP (Instance Manager & Instances)
+# --------------------------------------------------
+log "${BLUE}Step 2: Updating AMP instance manager and instances...${NC}"
+log "${MAGENTA}NOTE: getamp will manage AMP instance restarts automatically${NC}"
 
 UPDATE_SUCCESS=false
 
@@ -152,20 +129,20 @@ fi
 # Ensure permissions after update
 ensure_amp_perms
 
-# Step 4: Start AMP instances
-log "${BLUE}Step 4: Starting AMP instances...${NC}"
-start_amp_instances
-
-# Step 5: Cleanup and verification
-log "${BLUE}Step 5: Verifying update...${NC}"
+# --------------------------------------------------
+# Step 3: Verify AMP Status
+# --------------------------------------------------
+log "${BLUE}Step 3: Verifying AMP status after update...${NC}"
 if check_amp_status; then
     log "${GREEN}AMP is running successfully after update${NC}"
 else
     log "${YELLOW}WARNING: AMP may not be running properly${NC}"
 fi
 
-# Clean up old packages
-log "${MAGENTA}Cleaning up old packages...${NC}"
+# --------------------------------------------------
+# Step 4: Cleanup
+# --------------------------------------------------
+log "${MAGENTA}Step 4: Cleaning up old packages...${NC}"
 apt autoremove -y
 apt autoclean
 
