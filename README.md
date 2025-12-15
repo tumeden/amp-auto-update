@@ -7,9 +7,9 @@ Tags: Cubecoders AMP, amp-auto-update, ampinstmgr, getamp, cron, apt, Debian, Ub
 
 What this does
 - Runs apt update/upgrade for system packages.
-- Stops AMP instances (uses ampinstmgr stopall when available).
+- Stops AMP instances
 - Updates AMP instance manager and instances (prefers getamp update, falls back to apt upgrade ampinstmgr).
-- Restarts AMP instances (ampinstmgr startall when available).
+- Restarts AMP instances
 - Runs a permission check ensuring there are no permission issues caused by user error.
 - Cleans up packages (apt autoremove/autoclean).
 - Writes human-readable logs to /var/log/amp_auto_update.log.
@@ -108,9 +108,9 @@ How the update script works (high level)
 
 1. Confirms script is run as root.
 2. Updates apt package lists and applies upgrades (apt update && apt upgrade -y).
-3. Stops AMP instances (ampinstmgr stopall) if ampinstmgr is available.
+3. Stops AMP instances
 4. Attempts to update AMP via getamp update if present; otherwise uses apt upgrade ampinstmgr -y. (adds repo if update fails)
-5. Starts AMP instances (ampinstmgr startall) if available.
+5. Starts AMP instances
 6. Verifies AMP is running (pgrep -f ampinstmgr).
 7. Checks that permissions are correct (ampinstmgr fixperms)
 8. Runs apt autoremove -y and apt autoclean.
