@@ -10,9 +10,10 @@ What this does
 - Stops AMP instances (uses ampinstmgr stopall when available).
 - Updates AMP instance manager and instances (prefers getamp update, falls back to apt upgrade ampinstmgr).
 - Restarts AMP instances (ampinstmgr startall when available).
+- Runs a permission check ensuring there are no permission issues caused by user error.
 - Cleans up packages (apt autoremove/autoclean).
 - Writes human-readable logs to /var/log/amp_auto_update.log.
-- Intended to be run as root (script checks for root and exits if not).
+
 
 Files
 
