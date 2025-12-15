@@ -7,7 +7,6 @@
 # Configuration
 LOG_FILE="/var/log/amp_auto_update.log"
 AMP_USER="amp"  # Change this to your AMP user if different
-BACKUP_DIR="/opt/amp_backups"
 DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
 # Colors for output
@@ -35,8 +34,6 @@ fi
 
 log "=== Starting AMP Auto Update Process ==="
 
-# Create backup directory if it doesn't exist
-mkdir -p "$BACKUP_DIR"
 
 # Function to check if AMP is running
 check_amp_status() {
@@ -150,8 +147,3 @@ apt autoclean
 log "=== AMP Auto Update Process Completed ==="
 echo -e "${GREEN}AMP Auto Update completed successfully!${NC}"
 log "Update process completed at $(date)"
-
-# Optional: Send notification (uncomment and configure if needed)
-# if command -v mail &> /dev/null; then
-#     echo "AMP Auto Update completed successfully at $(date)" | mail -s "AMP Update Complete" your-email@example.com
-# fi 
