@@ -17,8 +17,8 @@ What this does
 
 Files
 
-- `amp_auto_update.sh` — main update script. Must be run as root. Logs to /var/log/amp_auto_update.log.
-- `setup_cron.sh` — helper script that sets up a cron job for the update script. Prompts  user to choose a schedule, and installs a root cron job pointing to the absolute script path. Must be run as root.
+- `amp_auto_update.sh` — main update script. Must be run as root. (Can be run manually, or setup with a cron to run automatically on a schedule) 
+- `setup_cron.sh` — helper script that sets up a cron job for the update script. Prompts  user to choose a schedule, and installs a cron job. Must be run as root.
 
 Prerequisites
 
