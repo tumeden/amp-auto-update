@@ -1,13 +1,10 @@
 # amp-auto-update
 
-Short description
-
-Cubecoders AMP auto update scripts to automatically update system packages and AMP (ampinstmgr/getamp) components on Debian/Ubuntu servers. Stops AMP instances, updates system and AMP software, restarts AMP instances, and logs results for unattended maintenance.
+Cubecoders AMP auto update script was designed to automatically update system packages and AMP components on Debian/Ubuntu servers. It Stops AMP instances, updates system and AMP software, restarts AMP instances, and logs results for unattended maintenance.
 
 Tags: Cubecoders AMP, amp-auto-update, ampinstmgr, getamp, cron, apt, Debian, Ubuntu
 
 What this does
-
 - Runs apt update/upgrade for system packages.
 - Stops AMP instances (uses ampinstmgr stopall when available).
 - Updates AMP instance manager and instances (prefers getamp update, falls back to apt upgrade ampinstmgr).
@@ -18,14 +15,14 @@ What this does
 
 Files
 
-- amp_auto_update.sh — main update script. Must be run as root. Logs to /var/log/amp_auto_update.log.
-- setup_cron.sh — helper script that prepares the log file, ensures amp_auto_update.sh is executable, prompts for a schedule, and installs a root cron job pointing to the absolute script path. Must be run as root.
+- `amp_auto_update.sh` — main update script. Must be run as root. Logs to /var/log/amp_auto_update.log.
+- `setup_cron.sh` — helper script that sets up a cron job for the update script. Prompts  user to choose a schedule, and installs a root cron job pointing to the absolute script path. Must be run as root.
 
 Prerequisites
 
-- Debian/Ubuntu family (uses apt)
+- Debian/Ubuntu (preferred) linux operating system
 - sudo/root access
-- Optional but recommended: ampinstmgr or getamp in PATH for AMP updates
+- Cubecoders/AMP must be installed.
 
 Quick start (copy & paste)
 
