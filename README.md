@@ -43,13 +43,13 @@ sudo cp amp_auto_update.sh setup_cron.sh /opt/amp-auto-update/
 cd /opt/amp-auto-update
 ```
 
-3) Make the scripts executable (setup_cron.sh will also make amp_auto_update.sh executable):
+3) Make the scripts executable:
 
 ```
 sudo chmod 755 amp_auto_update.sh setup_cron.sh
 ```
 
-4) Run the setup script to create the log file and add the cron job (interactive):
+4) Run the setup script to create a cron job to automatically run the update script on a schedule (interactive):
 
 ```
 sudo ./setup_cron.sh
@@ -109,11 +109,12 @@ How the update script works (high level)
 1. Confirms script is run as root.
 2. Updates apt package lists and applies upgrades (apt update && apt upgrade -y).
 3. Stops AMP instances (ampinstmgr stopall) if ampinstmgr is available.
-4. Attempts to update AMP via getamp update if present; otherwise uses apt upgrade ampinstmgr -y.
+4. Attempts to update AMP via getamp update if present; otherwise uses apt upgrade ampinstmgr -y. (adds repo if update fails)
 5. Starts AMP instances (ampinstmgr startall) if available.
 6. Verifies AMP is running (pgrep -f ampinstmgr).
-7. Runs apt autoremove -y and apt autoclean.
-8. Logs each step to /var/log/amp_auto_update.log and prints a success message at the end.
+7. Checks that permissions are correct (ampinstmgr fixperms)
+8. Runs apt autoremove -y and apt autoclean.
+9. Logs each step to /var/log/amp_auto_update.log and prints a success message at the end.
 
 Troubleshooting tips
 
