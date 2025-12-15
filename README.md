@@ -107,19 +107,17 @@ sudo crontab -l
 How the update script works (high level)
 
 1. Confirms script is run as root.
-2. Updates apt package lists and applies upgrades (apt update && apt upgrade -y).
-3. Stops AMP instances
-4. Attempts to update AMP via getamp update if present; otherwise uses apt upgrade ampinstmgr -y. (adds repo if update fails)
-5. Starts AMP instances
-6. Verifies AMP is running (pgrep -f ampinstmgr).
-7. Checks that permissions are correct (ampinstmgr fixperms)
-8. Runs apt autoremove -y and apt autoclean.
-9. Logs each step to /var/log/amp_auto_update.log and prints a success message at the end.
+2. Updates apt package lists and applies upgrades if they are available (apt update && apt upgrade -y).
+3. Attempts to update AMP using getamp update if present; otherwise falls back to apt upgrade ampinstmgr -y (repairs and re-adds the AMP repository if the update fails).
+4. Checks that permissions are correct (ampinstmgr fixperms)
+5. Verifies AMP is running (pgrep -f ampinstmgr).
+6. Runs apt autoremove -y and apt autoclean.
+7. Logs each step to /var/log/amp_auto_update.log and prints a success message at the end.
 
 Troubleshooting tips
 
 - Both scripts exit if not run as root — always use sudo or run as root.
 - If setup_cron.sh reports amp_auto_update.sh not found, ensure both scripts are in the same directory before running setup_cron.sh.
-- If getamp or ampinstmgr are not available in PATH, amp updates will fall back to package manager behavior or log warnings. Ensure ampinstmgr/getamp are installed and reachable.
+- If getamp or ampinstmgr are not available in PATH, this script will fail. Ensure AMP is installed correctly. 
 - If updates fail, inspect /var/log/amp_auto_update.log for the timestamped error messages the script writes.
 - If cron doesn’t run, check system cron service status (e.g., systemctl status cron) and root crontab for the entry.
