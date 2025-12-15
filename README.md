@@ -1,88 +1,125 @@
 # amp-auto-update
 
-This repository provides two shell scripts to automate updates for system packages and AMP instances on Debian/Ubuntu systems.
+Short description
+
+Cubecoders AMP auto update scripts to automatically update system packages and AMP (ampinstmgr/getamp) components on Debian/Ubuntu servers. Stops AMP instances, updates system and AMP software, restarts AMP instances, and logs results for unattended maintenance.
+
+Tags: Cubecoders AMP, amp-auto-update, ampinstmgr, getamp, cron, apt, Debian, Ubuntu
+
+What this does
+
+- Runs apt update/upgrade for system packages.
+- Stops AMP instances (uses ampinstmgr stopall when available).
+- Updates AMP instance manager and instances (prefers getamp update, falls back to apt upgrade ampinstmgr).
+- Restarts AMP instances (ampinstmgr startall when available).
+- Cleans up packages (apt autoremove/autoclean).
+- Writes human-readable logs to /var/log/amp_auto_update.log.
+- Intended to be run as root (script checks for root and exits if not).
 
 Files
 
-- amp_auto_update.sh — main update script. Must be run as root (it checks for root and exits if not). Logs to /var/log/amp_auto_update.log.
-- setup_cron.sh — helper that makes amp_auto_update.sh executable, creates the log file, and installs a root cron job. Must be run as root.
+- amp_auto_update.sh — main update script. Must be run as root. Logs to /var/log/amp_auto_update.log.
+- setup_cron.sh — helper script that prepares the log file, ensures amp_auto_update.sh is executable, prompts for a schedule, and installs a root cron job pointing to the absolute script path. Must be run as root.
 
-Quick summary
+Prerequisites
 
-1) Keep both scripts in the same directory. The setup_cron.sh script uses the amp_auto_update.sh path relative to itself.
-2) Run setup_cron.sh as root to create the cron job and log file.
-3) You can manually run amp_auto_update.sh with sudo to test or trigger an immediate update.
+- Debian/Ubuntu family (uses apt)
+- sudo/root access
+- Optional but recommended: ampinstmgr or getamp in PATH for AMP updates
 
-Step-by-step setup (recommended)
+Quick start (copy & paste)
 
-1. Clone the repo (or copy the scripts to the machine where AMP runs):
+1) Clone the repo
 
-   git clone https://github.com/tumeden/amp-auto-update.git
-   cd amp-auto-update
+```
+git clone https://github.com/tumeden/amp-auto-update.git
+cd amp-auto-update
+```
 
-2. (Optional) Move scripts to a stable location. Keeping both scripts together is required. Recommended location: /opt/amp-auto-update
+2) (Recommended) Move scripts to a stable location and switch to it (example: /opt/amp-auto-update)
 
-   sudo mkdir -p /opt/amp-auto-update
-   sudo cp amp_auto_update.sh setup_cron.sh /opt/amp-auto-update/
-   cd /opt/amp-auto-update
+```
+sudo mkdir -p /opt/amp-auto-update
+sudo cp amp_auto_update.sh setup_cron.sh /opt/amp-auto-update/
+cd /opt/amp-auto-update
+```
 
-3. Make the scripts executable (setup_cron will also ensure amp_auto_update.sh is executable):
+3) Make the scripts executable (setup_cron.sh will also make amp_auto_update.sh executable):
 
-   sudo chmod 755 amp_auto_update.sh setup_cron.sh
+```
+sudo chmod 755 amp_auto_update.sh setup_cron.sh
+```
 
-4. Run the setup script to create the log file and add the cron job (it will prompt for a schedule):
+4) Run the setup script to create the log file and add the cron job (interactive):
 
-   sudo ./setup_cron.sh
+```
+sudo ./setup_cron.sh
+```
 
-   - The script will:
-     • Verify amp_auto_update.sh exists in the same directory.
-     • Make amp_auto_update.sh executable.
-     • Create /var/log/amp_auto_update.log with permissions 644.
-     • Prompt you to choose a maintenance window (or enter a custom cron schedule).
-     • Add a root cron entry for the chosen schedule that runs the absolute path to amp_auto_update.sh.
+What setup_cron.sh does:
 
-5. Verify the cron job was added:
+- Verifies amp_auto_update.sh exists in the same directory.
+- Makes amp_auto_update.sh executable.
+- Creates /var/log/amp_auto_update.log (permissions 644).
+- Lets you choose a recommended schedule or enter a custom cron expression.
+- Adds a root crontab entry that runs the absolute path to amp_auto_update.sh.
 
-   sudo crontab -l
+Verify the cron (as root)
 
-   You should see a line similar to:
+```
+sudo crontab -l
+```
 
-   0 4 * * 0 /opt/amp-auto-update/amp_auto_update.sh
+Example cron lines you may see:
 
-   (The exact schedule depends on the selection you made.)
+```
+0 4 * * 0 /opt/amp-auto-update/amp_auto_update.sh    # Sunday 4:00 AM
+0 4 * * * /opt/amp-auto-update/amp_auto_update.sh    # Daily 4:00 AM
+```
 
-Manual run and testing
+Manual run (test immediately)
 
-- To run the update script immediately:
+```
+sudo /opt/amp-auto-update/amp_auto_update.sh
+```
 
-  sudo /opt/amp-auto-update/amp_auto_update.sh
+View logs
 
-- To view the log output created by the script:
+```
+sudo tail -n 200 /var/log/amp_auto_update.log
+sudo tail -f /var/log/amp_auto_update.log   # follow live output
+```
 
-  sudo tail -n 200 /var/log/amp_auto_update.log
-  sudo tail -f /var/log/amp_auto_update.log  # follow live output
+Remove or edit the cron job
 
-- To check whether AMP instance manager is running (the script uses pgrep -f "ampinstmgr"):
+- Edit the root crontab and remove the line that runs amp_auto_update.sh:
 
-  pgrep -f ampinstmgr || echo "ampinstmgr not running"
+```
+sudo crontab -e
+# Delete the line that contains /opt/amp-auto-update/amp_auto_update.sh, save and exit
+```
 
-Removing or editing the cron job
+- Or list root cron jobs:
 
-- To remove the cron job installed by setup_cron.sh, edit the root crontab and delete the line referencing amp_auto_update.sh:
+```
+sudo crontab -l
+```
 
-  sudo crontab -e
+How the update script works (high level)
 
-  Then remove the line that contains the full path to amp_auto_update.sh, save and exit.
+1. Confirms script is run as root.
+2. Updates apt package lists and applies upgrades (apt update && apt upgrade -y).
+3. Stops AMP instances (ampinstmgr stopall) if ampinstmgr is available.
+4. Attempts to update AMP via getamp update if present; otherwise uses apt upgrade ampinstmgr -y.
+5. Starts AMP instances (ampinstmgr startall) if available.
+6. Verifies AMP is running (pgrep -f ampinstmgr).
+7. Runs apt autoremove -y and apt autoclean.
+8. Logs each step to /var/log/amp_auto_update.log and prints a success message at the end.
 
-- To list cron jobs (as root):
+Troubleshooting tips
 
-  sudo crontab -l
-
-Notes and quick troubleshooting
-
-- Both scripts must be run as root. They check for this and will exit with an error if not run with sudo/root.
-- setup_cron.sh expects amp_auto_update.sh to be in the same directory and will fail if it is not found.
-- The primary log file is /var/log/amp_auto_update.log — check it first if something fails.
-- The update script uses apt for system updates and either getamp or apt to update ampinstmgr. Ensure these commands are available in PATH on the server.
-
-If you want different locations or to run the cron as a non-root user, reply with the desired user and location and I will update these instructions.
+- Both scripts exit if not run as root — always use sudo or run as root.
+- If setup_cron.sh reports amp_auto_update.sh not found, ensure both scripts are in the same directory before running setup_cron.sh.
+- If getamp or ampinstmgr are not available in PATH, amp updates will fall back to package manager behavior or log warnings. Ensure ampinstmgr/getamp are installed and reachable.
+- If updates fail, inspect /var/log/amp_auto_update.log for the timestamped error messages the script writes.
+- If cron doesn’t run, check system cron service status (e.g., systemctl status cron) and root crontab for the entry.
