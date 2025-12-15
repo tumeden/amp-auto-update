@@ -6,24 +6,25 @@
 
 # Configuration
 LOG_FILE="/var/log/amp_auto_update.log"
-AMP_USER="amp"  # Change this to your AMP user if different
 DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
 # Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+RED='\033[0;31m'       # Errors
+GREEN='\033[0;32m'     # Success
+YELLOW='\033[1;33m'    # Warnings
+BLUE='\033[0;34m'      # Steps/Info
+MAGENTA='\033[0;35m'   # Sub-info / minor highlights
+CYAN='\033[0;36m'      # Actions / commands
+NC='\033[0m'           # No Color
 
 # Logging function
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a "$LOG_FILE"
 }
 
 # Error handling
 error_exit() {
-    log "ERROR: $1"
-    echo -e "${RED}ERROR: $1${NC}"
+    log "${RED}ERROR: $1${NC}"
     exit 1
 }
 
@@ -32,118 +33,142 @@ if [[ $EUID -ne 0 ]]; then
     error_exit "This script must be run as root (use sudo)"
 fi
 
+echo -e "${BLUE}=== Starting AMP Auto Update Process ===${NC}"
 log "=== Starting AMP Auto Update Process ==="
-
 
 # Function to check if AMP is running
 check_amp_status() {
     if pgrep -f "ampinstmgr" > /dev/null; then
-        log "AMP instance manager is running"
+        log "${GREEN}AMP instance manager is running${NC}"
         return 0
     else
-        log "AMP instance manager is not running"
+        log "${YELLOW}AMP instance manager is not running${NC}"
         return 1
     fi
 }
 
 # Function to stop AMP instances
 stop_amp_instances() {
-    log "Stopping all AMP instances..."
+    log "${BLUE}Stopping all AMP instances...${NC}"
     if command -v ampinstmgr &> /dev/null; then
-        ampinstmgr stopall
+        su -l amp -c "ampinstmgr stopall"
         sleep 5
-        log "AMP instances stopped"
+        log "${GREEN}AMP instances stopped${NC}"
     else
-        log "WARNING: ampinstmgr not found in PATH"
+        log "${YELLOW}WARNING: ampinstmgr not found in PATH${NC}"
     fi
 }
 
 # Function to start AMP instances
 start_amp_instances() {
-    log "Starting AMP instances..."
+    log "${BLUE}Starting AMP instances...${NC}"
     if command -v ampinstmgr &> /dev/null; then
-        ampinstmgr startall
+        su -l amp -c "ampinstmgr startall"
         sleep 10
-        log "AMP instances started"
+        log "${GREEN}AMP instances started${NC}"
     else
-        log "WARNING: ampinstmgr not found in PATH"
+        log "${YELLOW}WARNING: ampinstmgr not found in PATH${NC}"
+    fi
+}
+
+# Ensure AMP permissions are correct
+ensure_amp_perms() {
+    log "${MAGENTA}Ensuring AMP permissions are correct...${NC}"
+    if command -v ampinstmgr &> /dev/null; then
+        ampinstmgr fixperms
+        log "${GREEN}AMP permissions verified and corrected if needed${NC}"
+    else
+        log "${YELLOW}WARNING: ampinstmgr not found in PATH${NC}"
+    fi
+}
+
+# Repair AMP repository (only if updates fail)
+repair_amp_repo() {
+    log "${MAGENTA}Attempting to repair CubeCoders AMP repository...${NC}"
+
+    if command -v getamp &> /dev/null; then
+        log "${CYAN}Using getamp addRepo...${NC}"
+        getamp addRepo
+    else
+        log "${CYAN}Using legacy getamp.sh repo method...${NC}"
+        bash <(wget -qO- https://cubecoders.com/getamp.sh) addRepo
     fi
 }
 
 # Step 1: System Update
-log "Step 1: Updating system packages..."
-apt update
-if [[ $? -eq 0 ]]; then
-    log "Package list updated successfully"
-else
-    error_exit "Failed to update package list"
-fi
+log "${BLUE}Step 1: Updating system packages...${NC}"
+apt update || error_exit "Failed to update package list"
 
-# Check for available updates
-UPGRADES=$(apt list --upgradable 2>/dev/null | grep -v "WARNING" | wc -l)
+UPGRADES=$(apt list --upgradable 2>/dev/null | grep -v "WARNING" | grep -v "Listing" | wc -l)
 if [[ $UPGRADES -gt 0 ]]; then
-    log "Found $UPGRADES packages to upgrade"
-    
-    # Perform system upgrade
-    apt upgrade -y
-    if [[ $? -eq 0 ]]; then
-        log "System packages upgraded successfully"
-    else
-        error_exit "Failed to upgrade system packages"
-    fi
+    log "${YELLOW}Found $UPGRADES packages to upgrade${NC}"
+    apt upgrade -y || error_exit "Failed to upgrade system packages"
+    log "${GREEN}System packages upgraded successfully${NC}"
 else
-    log "No system packages need upgrading"
+    log "${GREEN}No system packages need upgrading${NC}"
 fi
 
 # Step 2: Stop AMP instances before update
-log "Step 2: Preparing AMP for update..."
+log "${BLUE}Step 2: Preparing AMP for update...${NC}"
 stop_amp_instances
 
 # Step 3: Update AMP Instance Manager and Instances
-log "Step 3: Updating AMP instance manager and instances..."
+log "${BLUE}Step 3: Updating AMP instance manager and instances...${NC}"
+
+UPDATE_SUCCESS=false
+
 if command -v getamp &> /dev/null; then
-    # Use getamp update for recent versions - this updates everything automatically
-    log "Using getamp update method..."
-    getamp update
-    if [[ $? -eq 0 ]]; then
-        log "AMP instance manager and instances updated successfully"
+    log "${CYAN}Using getamp update method...${NC}"
+    if getamp update; then
+        UPDATE_SUCCESS=true
+        log "${GREEN}AMP instance manager and instances updated successfully${NC}"
     else
-        log "WARNING: getamp update failed, trying alternative method..."
-        # Fallback to package manager update
-        apt upgrade ampinstmgr -y
-        if [[ $? -eq 0 ]]; then
-            log "AMP instance manager updated via package manager"
-        else
-            error_exit "Failed to update AMP instance manager"
-        fi
-    fi
-else
-    log "getamp not found, using package manager update..."
-    apt upgrade ampinstmgr -y
-    if [[ $? -eq 0 ]]; then
-        log "AMP instance manager updated via package manager"
-    else
-        error_exit "Failed to update AMP instance manager"
+        log "${YELLOW}WARNING: getamp update failed${NC}"
     fi
 fi
 
+if [[ "$UPDATE_SUCCESS" = false ]]; then
+    log "${CYAN}Attempting AMP update via package manager...${NC}"
+    if apt upgrade ampinstmgr -y; then
+        UPDATE_SUCCESS=true
+        log "${GREEN}AMP instance manager updated via package manager${NC}"
+    else
+        log "${YELLOW}WARNING: AMP update via package manager failed${NC}"
+    fi
+fi
+
+if [[ "$UPDATE_SUCCESS" = false ]]; then
+    log "${RED}AMP update failed — repairing repo and retrying...${NC}"
+    repair_amp_repo
+    apt update
+
+    if command -v getamp &> /dev/null; then
+        getamp update || error_exit "AMP update failed even after repo repair"
+    else
+        apt upgrade ampinstmgr -y || error_exit "AMP update failed after repo repair"
+    fi
+fi
+
+# Ensure permissions after update
+ensure_amp_perms
+
 # Step 4: Start AMP instances
-log "Step 4: Starting AMP instances..."
+log "${BLUE}Step 4: Starting AMP instances...${NC}"
 start_amp_instances
 
 # Step 5: Cleanup and verification
-log "Step 5: Verifying update..."
+log "${BLUE}Step 5: Verifying update...${NC}"
 if check_amp_status; then
-    log "AMP is running successfully after update"
+    log "${GREEN}AMP is running successfully after update${NC}"
 else
-    log "WARNING: AMP may not be running properly"
+    log "${YELLOW}WARNING: AMP may not be running properly${NC}"
 fi
 
 # Clean up old packages
-log "Cleaning up old packages..."
+log "${MAGENTA}Cleaning up old packages...${NC}"
 apt autoremove -y
 apt autoclean
 
-log "=== AMP Auto Update Process Completed ==="
+log "${GREEN}=== AMP Auto Update Process Completed ===${NC}"
 echo -e "${GREEN}AMP Auto Update completed successfully!${NC}"
 log "Update process completed at $(date)"
